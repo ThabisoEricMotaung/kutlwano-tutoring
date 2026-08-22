@@ -36,8 +36,9 @@ export default function Footer() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-line py-5 text-center text-xs text-text-muted">
-        © {new Date().getFullYear()} Kutlwano Tutoring. All rights reserved.
+      <div className="border-t border-line py-5 text-center text-xs text-text-muted space-y-1">
+        <div>© {new Date().getFullYear()} Kutlwano Tutoring. All rights reserved.</div>
+        <div>Built by AiForm Studio</div>
       </div>
     </footer>
   );
