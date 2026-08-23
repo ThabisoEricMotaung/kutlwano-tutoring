@@ -38,7 +38,17 @@ export default function Footer() {
       </div>
       <div className="border-t border-line py-5 text-center text-xs text-text-muted space-y-1">
         <div>© {new Date().getFullYear()} Kutlwano Tutoring. All rights reserved.</div>
-        <div>Built by AiForm Studio</div>
+        <div>
+          Built by{" "}
+          <a
+            href="https://aiform-studio.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-primary transition-colors"
+          >
+            AiForm Studio
+          </a>
+        </div>
       </div>
     </footer>
   );
