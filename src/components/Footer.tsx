@@ -22,6 +22,7 @@ export default function Footer() {
             <li><Link href="/international-students" className="hover:text-primary">International Students</Link></li>
             <li><Link href="/sa-students" className="hover:text-primary">SA Students (Grade 8–11)</Link></li>
             <li><Link href="/pricing" className="hover:text-primary">Pricing</Link></li>
+            <li><Link href="/specials" className="hover:text-primary">Specials</Link></li>
           </ul>
         </div>
         <div>

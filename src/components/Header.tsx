@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 const NAV_LINKS = [
+  { href: "/specials", label: "Specials" },
   { href: "/about", label: "About" },
   { href: "/international-students", label: "International Students" },
   { href: "/sa-students", label: "SA Students" },

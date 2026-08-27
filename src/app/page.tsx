@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FEATURED_SPECIAL } from "@/lib/specials";
 
 const SERVICES = [
   {
@@ -20,6 +21,8 @@ const SERVICES = [
 ];
 
 export default function Home() {
+  const special = FEATURED_SPECIAL;
+
   return (
     <>
       {/* Hero */}
@@ -78,6 +81,34 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {special && (
+        <section className="border-y border-line bg-soft px-6 py-7">
+          <Link
+            href="/specials"
+            className="group mx-auto grid max-w-5xl gap-4 rounded-md border border-line bg-white p-5 transition-colors hover:border-accent sm:grid-cols-[1fr_auto] sm:items-center md:px-7"
+          >
+            <div>
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-accent">
+                {special.eyebrow}
+              </p>
+              <h2 className="font-display text-xl font-bold md:text-2xl">
+                {special.shortTitle}
+              </h2>
+              <p className="mt-1.5 text-sm leading-relaxed text-text-muted">
+                {special.subjects.length} subjects · {special.formats.join(" + ")}
+                <span className="mx-2 hidden sm:inline">·</span>
+                <span className="block font-semibold text-primary sm:inline">
+                  {special.price} for the duration of the holidays
+                </span>
+              </p>
+            </div>
+            <span className="text-sm font-semibold text-primary group-hover:text-accent">
+              View special →
+            </span>
+          </Link>
+        </section>
+      )}
 
       {/* Services */}
       <section className="px-6 py-20 max-w-5xl mx-auto">
