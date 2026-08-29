@@ -4,6 +4,7 @@ import { money } from "@/lib/festive-offer";
 
 type EFTInstructions = {
   reference: string;
+  paymentReference: string;
   status: string;
   amountMinor: number;
   currency: string;
@@ -126,7 +127,7 @@ export default function EFTPaymentInstructions({
               <div className="flex justify-between border-t border-line pt-2">
                 <dt className="font-semibold">Payment reference</dt>
                 <dd className="font-mono font-bold text-primary break-all">
-                  {reference}
+                  {instructions.paymentReference}
                 </dd>
               </div>
             </dl>
@@ -135,10 +136,10 @@ export default function EFTPaymentInstructions({
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
           <p className="font-semibold text-blue-900">
-            ⚠️ Important: Use your booking reference exactly as shown
+            ⚠️ Important: Use your payment reference exactly as shown
           </p>
           <p className="text-sm text-blue-800">
-            Please use your WanoTuts booking reference (<strong>{reference}</strong>) in the payment reference or memo field when making your EFT transfer. This helps us match your payment to your booking quickly.
+            Please use <strong>{instructions.paymentReference}</strong> as your payment reference when making the EFT. This helps us match your payment to your booking quickly.
           </p>
         </div>
 
@@ -157,6 +158,9 @@ export default function EFTPaymentInstructions({
           </p>
           <p>
             Your booking remains subject to the Booking Terms, Privacy Policy and Child Safeguarding Policy.
+          </p>
+          <p className="mt-2">
+            Booking reference (for support enquiries): <span className="font-mono break-all">{reference}</span>
           </p>
         </div>
       </div>

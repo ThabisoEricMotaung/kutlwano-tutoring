@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     const purchaseStatus =
       paymentMethod === "eft" ? "awaiting_payment" : "pending";
 
-    await createPurchase({
+    const eftPaymentReference = await createPurchase({
       reference,
       packageId: pkg.id,
       subject: parsed.data.subject,
@@ -133,6 +133,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         method: "eft",
         reference,
+        paymentReference: eftPaymentReference,
         amountMinor: chargedZarMinor,
         currency: "ZAR",
       });

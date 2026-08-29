@@ -30,6 +30,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       reference: p.reference,
+      paymentReference: p.eft_payment_reference ?? p.reference,
       status: p.status,
       amountMinor: p.display_amount_minor,
       currency: p.currency,
