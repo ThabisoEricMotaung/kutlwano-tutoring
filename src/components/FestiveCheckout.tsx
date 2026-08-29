@@ -14,19 +14,24 @@ export default function FestiveCheckout() {
   const [packageId, setPackageId] = useState<PackageId>("south_africa"),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
-    [learnerType, setLearnerType] = useState<"adult" | "minor">("adult");
+    [learnerType, setLearnerType] = useState<"adult" | "minor">("adult"),
+    [paymentMethod, setPaymentMethod] = useState<"eft" | "payfast">("eft");
   const pkg = FESTIVE_OFFER.packages[packageId];
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     setBusy(true);
-    track("festive_checkout_started", { package: packageId });
+    track("festive_checkout_started", {
+      package: packageId,
+      paymentMethod,
+    });
     const form = new FormData(e.currentTarget);
     const body: Record<string, FormDataEntryValue | boolean> =
       Object.fromEntries(form);
     body.acceptTerms = form.get("acceptTerms") === "on";
     body.guardianConsent = form.get("guardianConsent") === "on";
     body.marketingConsent = form.get("marketingConsent") === "on";
+    body.paymentMethod = paymentMethod;
     try {
       const r = await fetch("/api/festive-special/checkout", {
         method: "POST",
@@ -35,6 +40,14 @@ export default function FestiveCheckout() {
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error);
+
+      // EFT payment: redirect to success page with reference
+      if (data.method === "eft") {
+        window.location.href = `/festive-special/success?reference=${encodeURIComponent(data.reference)}`;
+        return;
+      }
+
+      // PayFast payment: create hidden form and submit
       const f = document.createElement("form");
       f.method = "post";
       f.action = data.action;
@@ -53,7 +66,10 @@ export default function FestiveCheckout() {
       setError(
         err instanceof Error ? err.message : "Checkout could not be started.",
       );
-      track("festive_payment_failed", { stage: "checkout" });
+      track("festive_payment_failed", {
+        stage: "checkout",
+        paymentMethod,
+      });
       setBusy(false);
     }
   }
@@ -106,6 +122,50 @@ export default function FestiveCheckout() {
               </span>
             </label>
           ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend className="font-semibold mb-3">Payment method</legend>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <label
+            className={`border rounded-lg p-4 cursor-pointer ${paymentMethod === "eft" ? "border-primary bg-soft" : "border-line"}`}
+          >
+            <input
+              type="radio"
+              name="paymentMethod"
+              value="eft"
+              checked={paymentMethod === "eft"}
+              onChange={() => {
+                setPaymentMethod("eft");
+                track("festive_payment_method_selected", { method: "eft" });
+              }}
+              className="mr-2"
+            />
+            <span className="font-semibold">Pay by EFT</span>
+            <span className="block text-sm text-text-muted mt-1">
+              Direct bank transfer to our business account
+            </span>
+          </label>
+          <label
+            className={`border rounded-lg p-4 cursor-pointer ${paymentMethod === "payfast" ? "border-primary bg-soft" : "border-line"}`}
+          >
+            <input
+              type="radio"
+              name="paymentMethod"
+              value="payfast"
+              checked={paymentMethod === "payfast"}
+              onChange={() => {
+                setPaymentMethod("payfast");
+                track("festive_payment_method_selected", { method: "payfast" });
+              }}
+              className="mr-2"
+            />
+            <span className="font-semibold">PayFast (Coming soon)</span>
+            <span className="block text-sm text-text-muted mt-1">
+              Secure online payment (currently being activated)
+            </span>
+          </label>
         </div>
       </fieldset>
       <div className="grid sm:grid-cols-2 gap-5">
@@ -288,12 +348,14 @@ export default function FestiveCheckout() {
         </p>
       )}
       <button
-        disabled={busy}
+        disabled={busy || paymentMethod === "payfast"}
         className="w-full sm:w-auto font-semibold px-7 py-3.5 rounded-sm bg-primary text-white hover:bg-accent disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-4"
       >
-        {busy
-          ? "Preparing secure checkout…"
-          : `Pay ${money(pkg.specialMinor, pkg.currency)} with PayFast`}
+        {paymentMethod === "payfast"
+          ? "PayFast payment (not yet available)"
+          : busy
+            ? "Preparing your booking…"
+            : `Complete EFT booking`}
       </button>
     </form>
   );

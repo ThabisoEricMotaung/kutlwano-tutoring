@@ -2,9 +2,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { money } from "@/lib/festive-offer";
+import EFTPaymentInstructions from "./EFTPaymentInstructions";
+
 type Purchase = {
   reference: string;
   status: string;
+  paymentMethod: string;
   packageId: string;
   subject: string;
   currency: string;
@@ -29,8 +32,13 @@ export default function PurchaseConfirmation({
         const d = await r.json();
         if (!r.ok) throw new Error(d.error);
         if (active) setP(d);
-        if (d.status === "pending" && tries++ < 10) setTimeout(check, 2000);
-        if (d.status === "completed")
+        // For EFT, awaiting_payment is the normal state; poll less frequently
+        if (d.paymentMethod === "eft" && d.status === "awaiting_payment" && tries++ < 3)
+          setTimeout(check, 5000);
+        // For PayFast, pending is temporary
+        if (d.paymentMethod === "payfast" && d.status === "pending" && tries++ < 10)
+          setTimeout(check, 2000);
+        if (d.status === "completed" || d.status === "paid")
           window.dispatchEvent(
             new CustomEvent("wanotuts:analytics", {
               detail: {
@@ -56,14 +64,36 @@ export default function PurchaseConfirmation({
         body="No purchase has been marked successful. Please contact WanoTuts with your reference if payment left your account."
       />
     );
-  if (!p || p.status === "pending")
+  if (!p)
+    return (
+      <State
+        title="Loading booking status..."
+        body="Please wait while we retrieve your booking information."
+      />
+    );
+
+  // EFT payment awaiting verification
+  if (p.paymentMethod === "eft" && p.status === "awaiting_payment") {
+    return (
+      <EFTPaymentInstructions
+        reference={p.reference}
+        amountMinor={p.amountMinor}
+        currency="ZAR"
+      />
+    );
+  }
+
+  // PayFast payment still pending (verification in progress)
+  if (p.paymentMethod === "payfast" && p.status === "pending")
     return (
       <State
         title="Payment verification in progress"
         body="PayFast confirmation can take a moment. This page will update automatically; your purchase is not confirmed yet."
       />
     );
-  if (p.status !== "completed")
+
+  // Payment not completed
+  if (p.status !== "completed" && p.status !== "paid")
     return (
       <State
         title="Payment was not completed"
@@ -155,6 +185,7 @@ export default function PurchaseConfirmation({
     </div>
   );
 }
+
 function State({ title, body }: { title: string; body: string }) {
   return (
     <div className="bg-white border border-line rounded-xl p-8">

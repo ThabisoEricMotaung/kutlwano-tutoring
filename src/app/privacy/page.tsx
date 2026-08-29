@@ -9,6 +9,10 @@ export const metadata: Metadata = {
 export default function Privacy() {
   return (
     <PolicyPage eyebrow="Privacy" title="Privacy Policy">
+      <h2>WanoTuts and Kopanong Ya Kutlwano Enterprise</h2>
+      <p>
+        WanoTuts is a tutoring service operated by Kopanong Ya Kutlwano Enterprise. Kopanong Ya Kutlwano Enterprise is the controller of your personal information and is responsible for your booking, payment and learner data.
+      </p>
       <h2>Who operates WanoTuts</h2>
       <p>
         {SITE_DETAILS.legalDescription} For privacy questions, requests or

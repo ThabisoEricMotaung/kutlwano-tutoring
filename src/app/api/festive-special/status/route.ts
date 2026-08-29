@@ -10,6 +10,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       reference: p.reference,
       status: p.status,
+      paymentMethod: p.payment_method,
       packageId: p.package_id,
       subject: p.subject,
       currency: p.currency,

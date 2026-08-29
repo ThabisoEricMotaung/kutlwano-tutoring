@@ -9,6 +9,10 @@ export const metadata: Metadata = {
 export default function Terms() {
   return (
     <PolicyPage eyebrow="Bookings" title="Booking and Tutoring Terms">
+      <h2>WanoTuts and Kopanong Ya Kutlwano Enterprise</h2>
+      <p>
+        WanoTuts is a tutoring service operated by Kopanong Ya Kutlwano Enterprise. When you make a booking, you enter into a booking agreement with Kopanong Ya Kutlwano Enterprise, which operates WanoTuts and provides the tutoring services described in this agreement.
+      </p>
       <h2>December Learning Boost</h2>
       <p>
         The package contains four live, 60-minute one-on-one Microsoft Teams

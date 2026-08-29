@@ -34,9 +34,11 @@ export async function createPurchase(p: {
   termsAcceptedAt: Date;
   marketingConsent: boolean;
   marketingConsentAt: Date | null;
+  paymentMethod: "eft" | "payfast";
+  status: "awaiting_payment" | "pending";
 }) {
   await db().query(
-    `insert into festive_purchases(reference,package_id,subject,grade,customer_name,email,telephone,country,timezone,learning_goal,preferred_times,currency,display_amount_minor,charged_zar_minor,learner_type,learner_first_name,guardian_consent_version,guardian_consent_at,terms_version,terms_accepted_at,marketing_consent,marketing_consent_at,status) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,'pending')`,
+    `insert into festive_purchases(reference,package_id,subject,grade,customer_name,email,telephone,country,timezone,learning_goal,preferred_times,currency,display_amount_minor,charged_zar_minor,learner_type,learner_first_name,guardian_consent_version,guardian_consent_at,terms_version,terms_accepted_at,marketing_consent,marketing_consent_at,status,payment_method) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
     [
       p.reference,
       p.packageId,
@@ -60,12 +62,14 @@ export async function createPurchase(p: {
       p.termsAcceptedAt,
       p.marketingConsent,
       p.marketingConsentAt,
+      p.status,
+      p.paymentMethod,
     ],
   );
 }
 export async function getPurchase(reference: string) {
   const r = await db().query(
-    "select reference,package_id,subject,customer_name,email,currency,display_amount_minor,charged_zar_minor,status,pf_payment_id,created_at from festive_purchases where reference=$1",
+    "select reference,package_id,subject,customer_name,email,currency,display_amount_minor,charged_zar_minor,status,payment_method,pf_payment_id,created_at from festive_purchases where reference=$1",
     [reference],
   );
   return r.rows[0] as undefined | Record<string, unknown>;

@@ -67,13 +67,16 @@ export default function Footer() {
       </div>
       <div className="border-t border-line py-5 text-center text-xs text-text-muted space-y-1">
         <div>
+          WanoTuts is operated by Kopanong Ya Kutlwano Enterprise.
+        </div>
+        <div>
           © {new Date().getFullYear()} WanoTuts (Kutlwano Tutoring). All rights
           reserved.
         </div>
         <div>
           Built by{" "}
           <a
-            href="https://aiform-studio.vercel.app/"
+            href="https://aiformstudio.co.za/"
             target="_blank"
             rel="noopener noreferrer"
             className="underline underline-offset-2 hover:text-primary"
