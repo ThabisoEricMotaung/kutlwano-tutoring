@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdminRequest } from "@/lib/admin-auth";
+import { parseZarAmountToMinor } from "@/lib/amount";
 import { verifyEftPayment } from "@/lib/db";
 
 const verifyPaymentSchema = z.object({
   reference: z.string().trim().min(1),
+  receivedAmount: z.string().trim().min(1),
 });
 
 export async function POST(request: Request) {
@@ -13,10 +15,20 @@ export async function POST(request: Request) {
 
   const parsed = verifyPaymentSchema.safeParse(await request.json());
   if (!parsed.success)
-    return NextResponse.json({ error: "Missing booking reference" }, { status: 400 });
+    return NextResponse.json(
+      { error: "A booking reference and the amount received are required." },
+      { status: 400 },
+    );
+
+  const receivedMinor = parseZarAmountToMinor(parsed.data.receivedAmount);
+  if (receivedMinor === null)
+    return NextResponse.json(
+      { error: "Enter a valid amount, e.g. 450.00." },
+      { status: 400 },
+    );
 
   try {
-    const result = await verifyEftPayment(parsed.data.reference);
+    const result = await verifyEftPayment(parsed.data.reference, receivedMinor);
 
     switch (result.outcome) {
       case "not_found":
@@ -27,6 +39,23 @@ export async function POST(request: Request) {
             error:
               "This booking cannot be verified here: it is not an EFT booking awaiting payment.",
             purchase: result.purchase,
+          },
+          { status: 409 },
+        );
+      case "amount_mismatch":
+        return NextResponse.json(
+          {
+            error: "Payment does not match the amount due.",
+            expectedMinor: result.expectedMinor,
+            receivedMinor: result.receivedMinor,
+            outstandingMinor: Math.max(
+              0,
+              result.expectedMinor - result.receivedMinor,
+            ),
+            overpaymentMinor: Math.max(
+              0,
+              result.receivedMinor - result.expectedMinor,
+            ),
           },
           { status: 409 },
         );

@@ -2,7 +2,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { money } from "@/lib/festive-offer";
-import { unlocksCalendly } from "@/lib/purchase-status";
+import {
+  resolveDisplayedAmountPaidMinor,
+  unlocksCalendly,
+} from "@/lib/purchase-status";
 import EFTPaymentInstructions from "./EFTPaymentInstructions";
 
 type Purchase = {
@@ -13,6 +16,7 @@ type Purchase = {
   subject: string;
   currency: string;
   amountMinor: number;
+  eftReceivedAmountMinor: number | null;
 };
 export default function PurchaseConfirmation({
   reference,
@@ -119,7 +123,14 @@ export default function PurchaseConfirmation({
           <div>
             <dt className="text-text-muted">Amount paid</dt>
             <dd className="font-semibold">
-              {money(p.amountMinor, p.currency)}
+              {(() => {
+                const paidMinor = resolveDisplayedAmountPaidMinor(p);
+                // Legacy paid EFT rows recorded before eft_received_amount_minor
+                // existed have no verified amount on file - never invent one.
+                return paidMinor != null
+                  ? money(paidMinor, p.currency)
+                  : "Confirmed — contact WanoTuts for your exact receipt";
+              })()}
             </dd>
           </div>
           <div>

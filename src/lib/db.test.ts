@@ -141,7 +141,7 @@ describe("verifyEftPayment", () => {
     vi.unstubAllEnvs();
   });
 
-  it("moves an awaiting EFT booking to paid and sets verified_at server-side in a single atomic update", async () => {
+  it("moves an awaiting EFT booking to paid, stores the received amount and sets verified_at server-side in a single atomic update", async () => {
     const verifiedAt = "2026-08-29T10:00:00.000Z";
     queryMock.mockResolvedValueOnce({
       rowCount: 1,
@@ -151,12 +151,14 @@ describe("verifyEftPayment", () => {
           eft_payment_reference: "WT-415033",
           status: "paid",
           payment_method: "eft",
+          charged_zar_minor: 45000,
+          eft_received_amount_minor: 45000,
           verified_at: verifiedAt,
         },
       ],
     });
 
-    const result = await verifyEftPayment("WDLB-abc");
+    const result = await verifyEftPayment("WDLB-abc", 45000);
 
     expect(result.outcome).toBe("verified");
     expect(queryMock).toHaveBeenCalledTimes(1); // no fallback lookup needed
@@ -164,13 +166,68 @@ describe("verifyEftPayment", () => {
     expect(sql).toContain("status='paid'");
     expect(sql).toContain("payment_method='eft'");
     expect(sql).toContain("status='awaiting_payment'");
-    expect(params).toEqual(["WDLB-abc"]);
+    expect(sql).toContain("charged_zar_minor=$2");
+    expect(sql).toContain("eft_received_amount_minor=$2");
+    expect(params).toEqual(["WDLB-abc", 45000]);
     if (result.outcome === "verified") {
       expect(result.purchase.verified_at).toBe(verifiedAt);
+      expect(result.purchase.eft_received_amount_minor).toBe(45000);
     }
   });
 
-  it("is idempotent: verifying an already-paid booking again does not overwrite verified_at", async () => {
+  it("R450 expected / R10 received: does not verify, reports the outstanding amount, booking stays awaiting_payment", async () => {
+    // amount condition in the WHERE clause fails, so the UPDATE affects zero
+    // rows even though payment_method and status both still match.
+    queryMock
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            reference: "WDLB-abc",
+            payment_method: "eft",
+            status: "awaiting_payment",
+            charged_zar_minor: 45000,
+            eft_received_amount_minor: null,
+          },
+        ],
+      });
+
+    const result = await verifyEftPayment("WDLB-abc", 1000);
+
+    expect(result.outcome).toBe("amount_mismatch");
+    if (result.outcome === "amount_mismatch") {
+      expect(result.expectedMinor).toBe(45000);
+      expect(result.receivedMinor).toBe(1000);
+    }
+  });
+
+  it("overpayment does not auto-verify", async () => {
+    queryMock
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            reference: "WDLB-abc",
+            payment_method: "eft",
+            status: "awaiting_payment",
+            charged_zar_minor: 45000,
+            eft_received_amount_minor: null,
+          },
+        ],
+      });
+
+    const result = await verifyEftPayment("WDLB-abc", 50000);
+
+    expect(result.outcome).toBe("amount_mismatch");
+    if (result.outcome === "amount_mismatch") {
+      expect(result.expectedMinor).toBe(45000);
+      expect(result.receivedMinor).toBe(50000);
+    }
+  });
+
+  it("is idempotent: verifying an already-paid booking again does not overwrite verified_at or the recorded received amount", async () => {
     const originalVerifiedAt = "2026-08-29T09:00:00.000Z";
     // the UPDATE's WHERE status='awaiting_payment' no longer matches, so it
     // affects zero rows - this is what makes the transition impossible to
@@ -185,17 +242,22 @@ describe("verifyEftPayment", () => {
             eft_payment_reference: "WT-415033",
             status: "paid",
             payment_method: "eft",
+            charged_zar_minor: 45000,
+            eft_received_amount_minor: 45000,
             verified_at: originalVerifiedAt,
           },
         ],
       });
 
-    const result = await verifyEftPayment("WDLB-abc");
+    // a different (wrong) amount submitted on the accidental second click
+    // must not be able to change anything either
+    const result = await verifyEftPayment("WDLB-abc", 1);
 
     expect(result.outcome).toBe("already_verified");
     expect(queryMock).toHaveBeenCalledTimes(2);
     if (result.outcome === "already_verified") {
       expect(result.purchase.verified_at).toBe(originalVerifiedAt);
+      expect(result.purchase.eft_received_amount_minor).toBe(45000);
     }
   });
 
@@ -209,12 +271,13 @@ describe("verifyEftPayment", () => {
             reference: "WDLB-abc",
             payment_method: "payfast",
             status: "completed",
+            charged_zar_minor: 45000,
             verified_at: "2026-08-29T09:00:00.000Z",
           },
         ],
       });
 
-    const result = await verifyEftPayment("WDLB-abc");
+    const result = await verifyEftPayment("WDLB-abc", 45000);
 
     expect(result.outcome).toBe("rejected");
   });
@@ -229,12 +292,13 @@ describe("verifyEftPayment", () => {
             reference: "WDLB-abc",
             payment_method: "eft",
             status: "cancelled",
+            charged_zar_minor: 45000,
             verified_at: null,
           },
         ],
       });
 
-    const result = await verifyEftPayment("WDLB-abc");
+    const result = await verifyEftPayment("WDLB-abc", 45000);
 
     expect(result.outcome).toBe("rejected");
   });
@@ -244,7 +308,7 @@ describe("verifyEftPayment", () => {
       .mockResolvedValueOnce({ rowCount: 0, rows: [] })
       .mockResolvedValueOnce({ rowCount: 0, rows: [] });
 
-    const result = await verifyEftPayment("WDLB-does-not-exist");
+    const result = await verifyEftPayment("WDLB-does-not-exist", 45000);
 
     expect(result.outcome).toBe("not_found");
   });
@@ -261,17 +325,33 @@ describe("listEftPurchases", () => {
     vi.unstubAllEnvs();
   });
 
-  it("defaults to EFT bookings awaiting payment only", async () => {
+  it("defaults to the awaiting view: EFT bookings awaiting payment only", async () => {
     await listEftPurchases();
 
-    const [sql, params] = queryMock.mock.calls[0];
+    const [sql] = queryMock.mock.calls[0];
     expect(sql).toContain("payment_method='eft'");
     expect(sql).toContain("status='awaiting_payment'");
-    expect(params).toBeUndefined();
+  });
+
+  it("verified view: only paid EFT bookings", async () => {
+    await listEftPurchases({ view: "verified" });
+
+    const [sql] = queryMock.mock.calls[0];
+    expect(sql).toContain("payment_method='eft'");
+    expect(sql).toContain("status='paid'");
+    expect(sql).not.toContain("status='awaiting_payment'");
+  });
+
+  it("all view: both awaiting and paid EFT bookings", async () => {
+    await listEftPurchases({ view: "all" });
+
+    const [sql] = queryMock.mock.calls[0];
+    expect(sql).toContain("payment_method='eft'");
+    expect(sql).toContain("status in ('awaiting_payment','paid')");
   });
 
   it("searches by eft reference, internal reference, email or name when a query is given", async () => {
-    await listEftPurchases("WT-415033");
+    await listEftPurchases({ search: "WT-415033" });
 
     const [sql, params] = queryMock.mock.calls[0];
     expect(sql).toContain("payment_method='eft'");
@@ -294,5 +374,12 @@ describe("listEftPurchases", () => {
       "learner_first_name",
     ])
       expect(sql).not.toContain(sensitive);
+  });
+
+  it("selects eft_received_amount_minor so the verified/all views can show the amount received", async () => {
+    await listEftPurchases({ view: "verified" });
+
+    const [sql] = queryMock.mock.calls[0];
+    expect(sql).toContain("eft_received_amount_minor");
   });
 });

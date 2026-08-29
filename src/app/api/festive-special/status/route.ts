@@ -15,6 +15,7 @@ export async function GET(request: Request) {
       subject: p.subject,
       currency: p.currency,
       amountMinor: p.display_amount_minor,
+      eftReceivedAmountMinor: p.eft_received_amount_minor ?? null,
     });
   } catch {
     return NextResponse.json(

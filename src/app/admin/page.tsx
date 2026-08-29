@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { cookies } from "next/headers";
 import {
   ADMIN_SESSION_COOKIE,
   isValidAdminSessionToken,
 } from "@/lib/admin-auth";
-import { listEftPurchases } from "@/lib/db";
-import AdminDashboard from "@/components/AdminDashboard";
+import { getEftAdminSummary, listEftPurchases } from "@/lib/db";
+import AdminHeader from "@/components/admin/AdminHeader";
+import AdminDashboard from "@/components/admin/AdminDashboard";
 
 export const metadata: Metadata = {
   title: "Admin | WanoTuts",
@@ -25,11 +27,21 @@ export default async function AdminPage({
 
   if (!authenticated) {
     return (
-      <section className="px-6 py-16 bg-soft min-h-[70vh]">
-        <div className="max-w-sm mx-auto bg-white border border-line rounded-xl p-8">
-          <h1 className="font-display text-2xl font-bold mb-5">
-            WanoTuts admin
+      <section className="px-6 py-16 bg-soft min-h-[70vh] flex items-center">
+        <div className="max-w-sm mx-auto w-full bg-white border border-line rounded-2xl shadow-sm p-8">
+          <Image
+            src="/Images/wanotuts-logo.svg"
+            alt="WanoTuts"
+            width={578}
+            height={100}
+            className="h-8 w-auto mb-6"
+          />
+          <h1 className="font-display text-2xl font-bold mb-1">
+            Payments admin
           </h1>
+          <p className="text-sm text-text-muted mb-5">
+            Sign in to review and verify EFT payments.
+          </p>
           {error ? (
             <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
               Incorrect password.
@@ -51,7 +63,7 @@ export default async function AdminPage({
             </div>
             <button
               type="submit"
-              className="w-full bg-primary text-white font-semibold rounded-lg px-4 py-2"
+              className="w-full bg-primary text-white font-semibold rounded-lg px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-4"
             >
               Log in
             </button>
@@ -61,25 +73,28 @@ export default async function AdminPage({
     );
   }
 
-  const purchases = await listEftPurchases();
+  const [purchases, summary] = await Promise.all([
+    listEftPurchases(),
+    getEftAdminSummary().catch(() => null),
+  ]);
 
   return (
-    <section className="px-4 sm:px-6 py-10 bg-soft min-h-[70vh]">
+    <section className="px-4 sm:px-6 py-8 bg-soft min-h-[70vh]">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="font-display text-2xl font-bold">
-            EFT payments awaiting verification
+        <AdminHeader />
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-accent mb-1">
+            EFT payments
+          </p>
+          <h1 className="font-display text-3xl font-bold">
+            Awaiting verification
           </h1>
-          <form method="post" action="/api/admin/logout">
-            <button
-              type="submit"
-              className="text-sm font-semibold text-primary underline underline-offset-4"
-            >
-              Log out
-            </button>
-          </form>
+          <p className="text-text-muted mt-2 max-w-2xl">
+            Review EFT payments and verify them once the bank reference and
+            amount match.
+          </p>
         </div>
-        <AdminDashboard initialPurchases={purchases} />
+        <AdminDashboard initialPurchases={purchases} initialSummary={summary} />
       </div>
     </section>
   );
