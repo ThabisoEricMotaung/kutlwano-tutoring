@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { money } from "@/lib/festive-offer";
 import type { AdminPurchaseRow } from "@/lib/db";
+import EftReference from "./EftReference";
 
 type Mismatch = {
   expectedMinor: number;
@@ -98,7 +99,7 @@ export default function VerifyPaymentModal({
     >
       <form
         onSubmit={submit}
-        className="w-[min(90vw,28rem)] bg-white border border-line rounded-2xl shadow-lg p-6 space-y-4"
+        className="w-[min(90vw,28rem)] max-h-[90vh] overflow-y-auto bg-white border border-line rounded-2xl shadow-lg p-6 space-y-4"
       >
         <h2
           id="verify-payment-title"
@@ -110,8 +111,8 @@ export default function VerifyPaymentModal({
         <dl className="text-sm space-y-1.5">
           <div className="flex justify-between gap-4">
             <dt className="text-text-muted">Reference</dt>
-            <dd className="font-mono font-semibold text-primary">
-              {purchase.eft_payment_reference || "No reference"}
+            <dd>
+              <EftReference value={purchase.eft_payment_reference} />
             </dd>
           </div>
           <div className="flex justify-between gap-4">
@@ -193,7 +194,7 @@ export default function VerifyPaymentModal({
             disabled={busy}
             className="bg-primary text-white font-semibold rounded-lg px-4 py-2 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-4"
           >
-            {busy ? "Verifying…" : "Verify payment"}
+            {busy ? "Verifying…" : mismatch ? "Try again" : "Verify payment"}
           </button>
         </div>
       </form>

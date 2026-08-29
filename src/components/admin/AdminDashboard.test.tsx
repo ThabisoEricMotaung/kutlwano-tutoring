@@ -107,6 +107,64 @@ describe("AdminDashboard", () => {
     expect(screen.getAllByText("WT-415033").length).toBeGreaterThan(0);
   });
 
+  it("shows a clean 'No reference' for a legacy row with no short EFT reference, never fabricating one", () => {
+    const legacyRow: AdminPurchaseRow = {
+      ...awaitingRow,
+      reference: "WDLB-legacy",
+      eft_payment_reference: null,
+    };
+    render(
+      <AdminDashboard initialPurchases={[legacyRow]} initialSummary={null} />,
+    );
+
+    expect(screen.getAllByText("No reference").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/^WT-/)).not.toBeInTheDocument();
+  });
+
+  it("shows a human-readable package label instead of the raw database id", () => {
+    render(
+      <AdminDashboard initialPurchases={[awaitingRow]} initialSummary={null} />,
+    );
+
+    expect(
+      screen.getAllByText("South African learner / Mathematics").length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText(/south_africa/)).not.toBeInTheDocument();
+  });
+
+  it("shows a friendly booked date (day month year), not a slash-separated one", () => {
+    render(
+      <AdminDashboard initialPurchases={[awaitingRow]} initialSummary={null} />,
+    );
+
+    expect(screen.getByText("29 Aug 2026")).toBeInTheDocument();
+    expect(screen.queryByText(/2026\/08\/29/)).not.toBeInTheDocument();
+  });
+
+  it("the All tab shows its own empty-state message", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input.toString();
+        if (url.startsWith("/api/admin/purchases"))
+          return jsonResponse({ purchases: [], view: "all" });
+        return jsonResponse({});
+      }),
+    );
+    const user = userEvent.setup();
+
+    render(
+      <AdminDashboard initialPurchases={[awaitingRow]} initialSummary={null} />,
+    );
+    await user.click(screen.getByRole("tab", { name: "All" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getAllByText("No EFT payments found.").length,
+      ).toBeGreaterThan(0),
+    );
+  });
+
   it("switching to the Verified tab fetches and shows paid EFT bookings", async () => {
     vi.stubGlobal("fetch", makeFetchMock());
     const user = userEvent.setup();
@@ -118,7 +176,7 @@ describe("AdminDashboard", () => {
 
     await waitFor(() =>
       expect(
-        screen.getAllByText("No matching EFT bookings.").length,
+        screen.getAllByText("No verified EFT payments yet.").length,
       ).toBeGreaterThan(0),
     );
   });
@@ -158,7 +216,7 @@ describe("AdminDashboard", () => {
 
     await waitFor(() =>
       expect(
-        screen.getAllByText("No matching EFT bookings.").length,
+        screen.getAllByText("No payments match your search.").length,
       ).toBeGreaterThan(0),
     );
     expect(fetchMock).toHaveBeenCalledWith(

@@ -83,6 +83,10 @@ export function isOfferPurchasable(now = new Date()) {
     dateInCampaignTimezone(now) <= FESTIVE_OFFER.endsOn
   );
 }
+export function packageLabel(packageId: string) {
+  const packages: Record<string, { label: string }> = FESTIVE_OFFER.packages;
+  return packages[packageId]?.label ?? packageId;
+}
 export function money(minor: number, currency: string) {
   return new Intl.NumberFormat(currency === "ZAR" ? "en-ZA" : "en-US", {
     style: "currency",

@@ -1,15 +1,7 @@
 import { money } from "@/lib/festive-offer";
+import { formatShortDateTime } from "@/lib/format";
 import type { AdminPurchaseRow } from "@/lib/db";
-
-function formatVerifiedAt(verifiedAt: string | null) {
-  if (!verifiedAt) return "";
-  return new Date(verifiedAt).toLocaleString("en-ZA", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import EftReference from "./EftReference";
 
 export default function RecentActivity({
   items,
@@ -29,14 +21,16 @@ export default function RecentActivity({
         <ul className="space-y-3">
           {items.slice(0, 5).map((p) => (
             <li key={p.reference} className="text-sm">
-              <p className="font-mono font-semibold text-primary">
-                {p.eft_payment_reference || "No reference"}
+              <p>
+                <EftReference value={p.eft_payment_reference} />
               </p>
               <p className="text-text-muted">
                 {p.eft_received_amount_minor != null
                   ? money(p.eft_received_amount_minor, "ZAR")
                   : "—"}
-                {p.verified_at ? ` · Verified ${formatVerifiedAt(p.verified_at)}` : ""}
+                {p.verified_at
+                  ? ` · Verified ${formatShortDateTime(p.verified_at)}`
+                  : ""}
               </p>
             </li>
           ))}

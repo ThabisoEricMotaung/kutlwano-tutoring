@@ -81,6 +81,15 @@ describe("VerifyPaymentModal", () => {
       reference: "WDLB-abc",
       receivedAmount: "10.00",
     });
+
+    // the primary action now reads "Try again" - never implying the
+    // mismatched amount could somehow be overridden instead of retried
+    expect(
+      screen.getByRole("button", { name: "Try again" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Verify payment" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows an overpayment message instead of outstanding when received exceeds expected", async () => {

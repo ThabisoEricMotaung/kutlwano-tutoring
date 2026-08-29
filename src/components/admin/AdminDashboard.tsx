@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { money } from "@/lib/festive-offer";
+import { money, packageLabel } from "@/lib/festive-offer";
+import { formatShortDate, formatShortDateTime } from "@/lib/format";
 import type {
   AdminEftSummary,
   AdminPurchaseRow,
@@ -11,6 +12,7 @@ import SummaryCards from "./SummaryCards";
 import RecentActivity from "./RecentActivity";
 import VerificationTipsPanel from "./VerificationTipsPanel";
 import VerifyPaymentModal from "./VerifyPaymentModal";
+import EftReference from "./EftReference";
 
 const TABS: { view: AdminPurchaseView; label: string }[] = [
   { view: "awaiting", label: "Awaiting" },
@@ -18,18 +20,11 @@ const TABS: { view: AdminPurchaseView; label: string }[] = [
   { view: "all", label: "All" },
 ];
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("en-ZA");
-}
-
-function formatDateTime(value: string | null) {
-  if (!value) return "";
-  return new Date(value).toLocaleString("en-ZA", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function emptyStateMessage(view: AdminPurchaseView, hasQuery: boolean) {
+  if (hasQuery) return "No payments match your search.";
+  if (view === "awaiting") return "No payments awaiting verification.";
+  if (view === "verified") return "No verified EFT payments yet.";
+  return "No EFT payments found.";
 }
 
 export default function AdminDashboard({
@@ -221,7 +216,7 @@ export default function AdminDashboard({
 
           {/* Desktop / tablet: table */}
           <div className="hidden md:block bg-white border border-line rounded-xl overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" aria-label="EFT payment bookings">
               <thead>
                 <tr className="text-left border-b border-line">
                   {columns.map((c) => (
@@ -238,20 +233,20 @@ export default function AdminDashboard({
                       colSpan={columns.length}
                       className="p-6 text-center text-text-muted"
                     >
-                      No matching EFT bookings.
+                      {emptyStateMessage(view, query.trim() !== "")}
                     </td>
                   </tr>
                 )}
                 {purchases.map((p) => (
                   <tr key={p.reference} className="border-b border-line last:border-0">
-                    <td className="p-3 font-mono font-semibold text-primary">
-                      {p.eft_payment_reference || "No reference"}
+                    <td className="p-3">
+                      <EftReference value={p.eft_payment_reference} />
                     </td>
                     <td className="p-3">{p.customer_name}</td>
-                    <td className="p-3">{p.email}</td>
+                    <td className="p-3 break-words">{p.email}</td>
                     <td className="p-3">{p.telephone || "—"}</td>
                     <td className="p-3">
-                      {p.package_id} / {p.subject}
+                      {packageLabel(p.package_id)} / {p.subject}
                     </td>
                     <td className="p-3 font-semibold">
                       {money(p.charged_zar_minor, "ZAR")}
@@ -261,12 +256,12 @@ export default function AdminDashboard({
                         ? money(p.eft_received_amount_minor, "ZAR")
                         : "Not verified"}
                     </td>
-                    <td className="p-3">{formatDate(p.created_at)}</td>
+                    <td className="p-3">{formatShortDate(p.created_at)}</td>
                     <td className="p-3">
                       <StatusBadge status={p.status} />
                       {p.status === "paid" && p.verified_at && (
                         <div className="text-xs text-text-muted mt-1">
-                          {formatDateTime(p.verified_at)}
+                          {formatShortDateTime(p.verified_at)}
                         </div>
                       )}
                     </td>
@@ -293,7 +288,7 @@ export default function AdminDashboard({
           <ul className="md:hidden space-y-3">
             {purchases.length === 0 && (
               <li className="bg-white border border-line rounded-xl p-6 text-center text-text-muted">
-                No matching EFT bookings.
+                {emptyStateMessage(view, query.trim() !== "")}
               </li>
             )}
             {purchases.map((p) => (
@@ -302,34 +297,43 @@ export default function AdminDashboard({
                 className="bg-white border border-line rounded-xl p-4 space-y-2"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <span className="font-mono font-bold text-primary text-lg">
-                    {p.eft_payment_reference || "No reference"}
-                  </span>
+                  <EftReference
+                    value={p.eft_payment_reference}
+                    className="text-lg break-all"
+                  />
                   <StatusBadge status={p.status} />
                 </div>
                 <p className="font-semibold">{p.customer_name}</p>
-                <p className="text-sm text-text-muted">{p.email}</p>
+                <p className="text-sm text-text-muted break-words">{p.email}</p>
+                <p className="text-sm text-text-muted">
+                  {packageLabel(p.package_id)} / {p.subject}
+                </p>
                 <div className="grid grid-cols-2 gap-2 text-sm pt-1">
                   <div>
                     <p className="text-text-muted">Amount due</p>
-                    <p className="font-semibold">
+                    <p className="font-semibold text-base">
                       {money(p.charged_zar_minor, "ZAR")}
                     </p>
                   </div>
                   <div>
                     <p className="text-text-muted">Amount received</p>
-                    <p className="font-semibold">
+                    <p className="font-semibold text-base">
                       {p.eft_received_amount_minor != null
                         ? money(p.eft_received_amount_minor, "ZAR")
                         : "Not verified"}
                     </p>
                   </div>
                 </div>
+                {p.status === "paid" && p.verified_at && (
+                  <p className="text-xs text-text-muted">
+                    Verified {formatShortDateTime(p.verified_at)}
+                  </p>
+                )}
                 {p.payment_method === "eft" &&
                   p.status === "awaiting_payment" && (
                     <button
                       onClick={() => setVerifyTarget(p)}
-                      className="w-full mt-2 bg-accent text-white font-semibold rounded-lg px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-4"
+                      className="w-full mt-2 bg-accent text-white font-semibold rounded-lg px-3 py-2.5 focus-visible:outline-2 focus-visible:outline-offset-4"
                     >
                       Verify payment
                     </button>
