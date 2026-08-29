@@ -8,7 +8,7 @@ vi.mock("pg", () => ({
   }),
 }));
 
-import { createPurchase } from "./db";
+import { createPurchase, listEftPurchases, verifyEftPayment } from "./db";
 
 function uniqueViolation() {
   return Object.assign(new Error("duplicate key value"), {
@@ -128,5 +128,171 @@ describe("createPurchase EFT payment reference generation", () => {
       }),
     ).rejects.toThrow("connection refused");
     expect(queryMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("verifyEftPayment", () => {
+  beforeEach(() => {
+    vi.stubEnv("DATABASE_URL", "postgres://test:test@localhost:5432/test");
+    queryMock.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("moves an awaiting EFT booking to paid and sets verified_at server-side in a single atomic update", async () => {
+    const verifiedAt = "2026-08-29T10:00:00.000Z";
+    queryMock.mockResolvedValueOnce({
+      rowCount: 1,
+      rows: [
+        {
+          reference: "WDLB-abc",
+          eft_payment_reference: "WT-415033",
+          status: "paid",
+          payment_method: "eft",
+          verified_at: verifiedAt,
+        },
+      ],
+    });
+
+    const result = await verifyEftPayment("WDLB-abc");
+
+    expect(result.outcome).toBe("verified");
+    expect(queryMock).toHaveBeenCalledTimes(1); // no fallback lookup needed
+    const [sql, params] = queryMock.mock.calls[0];
+    expect(sql).toContain("status='paid'");
+    expect(sql).toContain("payment_method='eft'");
+    expect(sql).toContain("status='awaiting_payment'");
+    expect(params).toEqual(["WDLB-abc"]);
+    if (result.outcome === "verified") {
+      expect(result.purchase.verified_at).toBe(verifiedAt);
+    }
+  });
+
+  it("is idempotent: verifying an already-paid booking again does not overwrite verified_at", async () => {
+    const originalVerifiedAt = "2026-08-29T09:00:00.000Z";
+    // the UPDATE's WHERE status='awaiting_payment' no longer matches, so it
+    // affects zero rows - this is what makes the transition impossible to
+    // repeat, even under a concurrent duplicate click.
+    queryMock
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            reference: "WDLB-abc",
+            eft_payment_reference: "WT-415033",
+            status: "paid",
+            payment_method: "eft",
+            verified_at: originalVerifiedAt,
+          },
+        ],
+      });
+
+    const result = await verifyEftPayment("WDLB-abc");
+
+    expect(result.outcome).toBe("already_verified");
+    expect(queryMock).toHaveBeenCalledTimes(2);
+    if (result.outcome === "already_verified") {
+      expect(result.purchase.verified_at).toBe(originalVerifiedAt);
+    }
+  });
+
+  it("refuses to verify a PayFast booking through the EFT admin action", async () => {
+    queryMock
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            reference: "WDLB-abc",
+            payment_method: "payfast",
+            status: "completed",
+            verified_at: "2026-08-29T09:00:00.000Z",
+          },
+        ],
+      });
+
+    const result = await verifyEftPayment("WDLB-abc");
+
+    expect(result.outcome).toBe("rejected");
+  });
+
+  it("refuses to verify a cancelled EFT booking", async () => {
+    queryMock
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            reference: "WDLB-abc",
+            payment_method: "eft",
+            status: "cancelled",
+            verified_at: null,
+          },
+        ],
+      });
+
+    const result = await verifyEftPayment("WDLB-abc");
+
+    expect(result.outcome).toBe("rejected");
+  });
+
+  it("reports not_found for an unknown reference", async () => {
+    queryMock
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] });
+
+    const result = await verifyEftPayment("WDLB-does-not-exist");
+
+    expect(result.outcome).toBe("not_found");
+  });
+});
+
+describe("listEftPurchases", () => {
+  beforeEach(() => {
+    vi.stubEnv("DATABASE_URL", "postgres://test:test@localhost:5432/test");
+    queryMock.mockReset();
+    queryMock.mockResolvedValue({ rows: [], rowCount: 0 });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("defaults to EFT bookings awaiting payment only", async () => {
+    await listEftPurchases();
+
+    const [sql, params] = queryMock.mock.calls[0];
+    expect(sql).toContain("payment_method='eft'");
+    expect(sql).toContain("status='awaiting_payment'");
+    expect(params).toBeUndefined();
+  });
+
+  it("searches by eft reference, internal reference, email or name when a query is given", async () => {
+    await listEftPurchases("WT-415033");
+
+    const [sql, params] = queryMock.mock.calls[0];
+    expect(sql).toContain("payment_method='eft'");
+    expect(sql).toContain("eft_payment_reference ilike $1");
+    expect(sql).toContain("reference ilike $1");
+    expect(sql).toContain("email ilike $1");
+    expect(sql).toContain("customer_name ilike $1");
+    expect(params).toEqual(["%WT-415033%"]);
+  });
+
+  it("only ever selects the lean admin column set (no guardian/marketing/free-text fields)", async () => {
+    await listEftPurchases();
+
+    const [sql] = queryMock.mock.calls[0];
+    for (const sensitive of [
+      "guardian_consent",
+      "marketing_consent",
+      "learning_goal",
+      "preferred_times",
+      "learner_first_name",
+    ])
+      expect(sql).not.toContain(sensitive);
   });
 });

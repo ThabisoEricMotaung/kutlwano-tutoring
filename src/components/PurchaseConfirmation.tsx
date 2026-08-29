@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { money } from "@/lib/festive-offer";
+import { unlocksCalendly } from "@/lib/purchase-status";
 import EFTPaymentInstructions from "./EFTPaymentInstructions";
 
 type Purchase = {
@@ -38,7 +39,7 @@ export default function PurchaseConfirmation({
         // For PayFast, pending is temporary
         if (d.paymentMethod === "payfast" && d.status === "pending" && tries++ < 10)
           setTimeout(check, 2000);
-        if (d.status === "completed" || d.status === "paid")
+        if (unlocksCalendly(d.status))
           window.dispatchEvent(
             new CustomEvent("wanotuts:analytics", {
               detail: {
@@ -93,7 +94,7 @@ export default function PurchaseConfirmation({
     );
 
   // Payment not completed
-  if (p.status !== "completed" && p.status !== "paid")
+  if (!unlocksCalendly(p.status))
     return (
       <State
         title="Payment was not completed"

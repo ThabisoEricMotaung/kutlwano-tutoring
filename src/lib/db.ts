@@ -121,3 +121,73 @@ export async function completePurchase(
   );
   return r.rowCount === 1;
 }
+
+const ADMIN_PURCHASE_COLUMNS =
+  "reference,eft_payment_reference,customer_name,email,telephone,package_id,subject,currency,display_amount_minor,charged_zar_minor,status,payment_method,created_at,verified_at";
+
+export type AdminPurchaseRow = {
+  reference: string;
+  eft_payment_reference: string | null;
+  customer_name: string;
+  email: string;
+  telephone: string;
+  package_id: string;
+  subject: string;
+  currency: string;
+  display_amount_minor: number;
+  charged_zar_minor: number;
+  status: string;
+  payment_method: string;
+  created_at: string;
+  verified_at: string | null;
+};
+
+// Deliberately excludes learner_first_name, guardian consent, marketing
+// consent, learning_goal and preferred_times: the admin payment-verification
+// view has no need for that data.
+export async function listEftPurchases(
+  search?: string,
+): Promise<AdminPurchaseRow[]> {
+  const trimmed = search?.trim();
+  if (trimmed) {
+    const r = await db().query(
+      `select ${ADMIN_PURCHASE_COLUMNS} from festive_purchases where payment_method='eft' and (eft_payment_reference ilike $1 or reference ilike $1 or email ilike $1 or customer_name ilike $1) order by created_at desc limit 100`,
+      [`%${trimmed}%`],
+    );
+    return r.rows;
+  }
+  const r = await db().query(
+    `select ${ADMIN_PURCHASE_COLUMNS} from festive_purchases where payment_method='eft' and status='awaiting_payment' order by created_at asc limit 100`,
+  );
+  return r.rows;
+}
+
+export type VerifyEftPaymentResult =
+  | { outcome: "verified" | "already_verified"; purchase: AdminPurchaseRow }
+  | { outcome: "not_found" }
+  | { outcome: "rejected"; purchase: AdminPurchaseRow };
+
+// Single atomic UPDATE gated on payment_method='eft' and status='awaiting_payment'
+// is the only thing that can ever transition a booking to paid here, so a
+// second concurrent/duplicate click always affects zero rows and falls
+// through to the read-only lookup below instead of re-running the transition.
+export async function verifyEftPayment(
+  reference: string,
+): Promise<VerifyEftPaymentResult> {
+  const updated = await db().query(
+    `update festive_purchases set status='paid',verified_at=now(),updated_at=now() where reference=$1 and payment_method='eft' and status='awaiting_payment' returning ${ADMIN_PURCHASE_COLUMNS}`,
+    [reference],
+  );
+  if (updated.rowCount === 1)
+    return { outcome: "verified", purchase: updated.rows[0] };
+
+  const existing = await db().query(
+    `select ${ADMIN_PURCHASE_COLUMNS} from festive_purchases where reference=$1`,
+    [reference],
+  );
+  const purchase = existing.rows[0];
+  if (!purchase) return { outcome: "not_found" };
+  if (purchase.payment_method === "eft" && purchase.status === "paid")
+    return { outcome: "already_verified", purchase };
+  return { outcome: "rejected", purchase };
+}
