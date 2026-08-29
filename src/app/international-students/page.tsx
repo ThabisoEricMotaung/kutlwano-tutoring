@@ -20,8 +20,8 @@ export default function InternationalStudents() {
       </h1>
       <p className="text-[17px] leading-relaxed text-text-muted mb-10">
         One-on-one English lessons for international students, focused on
-        personalised learning, language practice, and grammar coaching —
-        at a flat rate of{" "}
+        personalised learning, language practice, and grammar coaching — at a
+        flat rate of{" "}
         <span className="text-text font-semibold">$25 per hour</span>.
       </p>
       <div className="bg-soft border border-line rounded-md p-7 mb-10">

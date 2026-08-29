@@ -17,9 +17,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Kutlwano Tutoring | One-on-One Lessons",
+  title: "WanoTuts | One-on-One Tutoring",
   description:
-    "Personalised one-on-one tutoring in English, Afrikaans, Mathematics and the Sciences. For international and South African students, Grade 8–11.",
+    "WanoTuts by Kutlwano Tutoring offers personalised one-on-one lessons in English, Afrikaans, Mathematics and the Sciences.",
+  icons: { icon: "/Images/wanotuts-mark.svg" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

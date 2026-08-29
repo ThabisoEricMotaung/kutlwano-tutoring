@@ -19,7 +19,10 @@ export default function Pricing() {
             International Students
           </div>
           <div className="font-display font-bold text-4xl mb-1">
-            $25<span className="text-lg font-sans font-medium text-text-muted">/hour</span>
+            $25
+            <span className="text-lg font-sans font-medium text-text-muted">
+              /hour
+            </span>
           </div>
           <p className="text-sm text-text-muted mb-6">Billed per lesson</p>
           <ul className="space-y-2.5 text-[15px] text-text-muted mb-8">
@@ -45,11 +48,14 @@ export default function Pricing() {
             South African Students
           </div>
           <div className="font-display font-bold text-4xl mb-1">
-            R500<span className="text-lg font-sans font-medium text-text-muted">/subject/month</span>
+            R500
+            <span className="text-lg font-sans font-medium text-text-muted">
+              /subject/month
+            </span>
           </div>
           <p className="text-sm text-text-muted mb-6">
-            English, Afrikaans, Mathematics, Technical Mathematics,
-            Technical Science, Natural Science, Physical Sciences
+            English, Afrikaans, Mathematics, Technical Mathematics, Technical
+            Science, Natural Science, Physical Sciences
           </p>
           <ul className="space-y-2.5 text-[15px] text-text-muted mb-8">
             <li>— Personalised learning</li>

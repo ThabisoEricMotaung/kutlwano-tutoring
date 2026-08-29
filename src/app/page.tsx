@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { FEATURED_SPECIAL } from "@/lib/specials";
 
 const SERVICES = [
@@ -35,8 +36,8 @@ export default function Home() {
         </h1>
         <p className="text-[17px] leading-relaxed text-text-muted max-w-xl mx-auto mb-9">
           Personalised tutoring in English, Afrikaans, Mathematics and the
-          Sciences — for international students and South African learners
-          in Grade 8–11.
+          Sciences — for international students and South African learners in
+          Grade 8–11.
         </p>
         <div className="flex gap-3.5 justify-center flex-wrap mb-11">
           <Link
@@ -75,8 +76,8 @@ export default function Home() {
               R500/subject
             </div>
             <p className="text-[13px] text-text-muted leading-relaxed">
-              Per month. English, Afrikaans, Maths, Technical Maths,
-              Technical Science, Natural Science &amp; Physical Sciences.
+              Per month. English, Afrikaans, Maths, Technical Maths, Technical
+              Science, Natural Science &amp; Physical Sciences.
             </p>
           </div>
         </div>
@@ -116,8 +117,8 @@ export default function Home() {
           What every lesson includes
         </h2>
         <p className="text-text-muted text-center max-w-lg mx-auto mb-12">
-          Every session is built around you — here&apos;s what that looks
-          like in practice.
+          Every session is built around you — here&apos;s what that looks like
+          in practice.
         </p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {SERVICES.map((s) => (
@@ -131,6 +132,45 @@ export default function Home() {
               </p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section
+        className="px-6 pb-20 max-w-5xl mx-auto"
+        aria-labelledby="meet-tutor-heading"
+      >
+        <div className="bg-soft border border-line rounded-2xl p-6 md:p-8 grid sm:grid-cols-[140px_1fr] gap-6 md:gap-8 items-center">
+          <div className="relative aspect-[4/5] w-32 sm:w-full overflow-hidden rounded-xl bg-white mx-auto">
+            <Image
+              src="/Images/WhatsApp Image 2026-08-25 at 07.35.38.jpeg"
+              alt="Kutlwano Sehume, the WanoTuts tutor"
+              fill
+              sizes="(min-width: 640px) 140px, 128px"
+              className="object-cover object-center"
+            />
+          </div>
+          <div>
+            <p className="text-xs font-semibold tracking-[0.12em] uppercase text-accent mb-2">
+              Meet your tutor
+            </p>
+            <h2
+              id="meet-tutor-heading"
+              className="font-display font-bold text-2xl md:text-3xl mb-3"
+            >
+              Personalised learning with Kutlwano.
+            </h2>
+            <p className="text-text-muted leading-relaxed mb-5">
+              Kutlwano Sehume offers one-on-one lessons for international
+              students and South African Grade 8–11 learners. She is based in
+              Pretoria and works with students locally and internationally.
+            </p>
+            <Link
+              href="/about"
+              className="font-semibold text-primary underline underline-offset-4 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4"
+            >
+              Meet Kutlwano
+            </Link>
+          </div>
         </div>
       </section>
 

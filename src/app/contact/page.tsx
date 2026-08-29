@@ -1,4 +1,6 @@
-export const metadata = { title: "Contact | Kutlwano Tutoring" };
+import Link from "next/link";
+import { SITE_DETAILS } from "@/lib/site-details";
+export const metadata = { title: "Contact | WanoTuts" };
 
 export default function Contact() {
   return (
@@ -15,22 +17,22 @@ export default function Contact() {
 
       <div className="grid sm:grid-cols-3 gap-6 mb-14">
         <a
-          href="tel:+27661629578"
+          href={SITE_DETAILS.phoneHref}
           className="border border-line rounded-md p-6 text-center hover:border-primary transition-colors"
         >
           <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-accent mb-2">
             Phone
           </div>
-          <div className="text-sm text-text">+27 66 162 9578</div>
+          <div className="text-sm text-text">{SITE_DETAILS.phoneDisplay}</div>
         </a>
         <a
-          href="mailto:sehumek@gmail.com"
+          href={`mailto:${SITE_DETAILS.email}`}
           className="border border-line rounded-md p-6 text-center hover:border-primary transition-colors"
         >
           <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-accent mb-2">
             Email
           </div>
-          <div className="text-sm text-text">sehumek@gmail.com</div>
+          <div className="text-sm text-text">{SITE_DETAILS.email}</div>
         </a>
         <div className="border border-line rounded-md p-6 text-center">
           <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-accent mb-2">
@@ -40,9 +42,31 @@ export default function Contact() {
         </div>
       </div>
 
-      {/* Booking embed placeholder */}
-      <div className="border border-dashed border-line rounded-md p-10 text-center text-sm text-text-muted">
-        Booking calendar embed goes here (e.g. Calendly).
+      <div className="border border-line bg-soft rounded-md p-7 text-center text-sm text-text-muted">
+        <p>
+          Before sharing learner details, please read the policies that apply to
+          lesson enquiries and bookings.
+        </p>
+        <div className="flex flex-wrap justify-center gap-4 mt-4">
+          <Link
+            href="/privacy"
+            className="text-primary underline underline-offset-4"
+          >
+            Privacy Policy
+          </Link>
+          <Link
+            href="/terms"
+            className="text-primary underline underline-offset-4"
+          >
+            Booking Terms
+          </Link>
+          <Link
+            href="/child-safeguarding"
+            className="text-primary underline underline-offset-4"
+          >
+            Child Safeguarding
+          </Link>
+        </div>
       </div>
     </section>
   );

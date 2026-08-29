@@ -23,7 +23,10 @@ export default function SAStudents() {
       </h1>
       <p className="text-[17px] leading-relaxed text-text-muted mb-10">
         Personalised tutoring for South African learners in Grade 8–11, at{" "}
-        <span className="text-text font-semibold">R500 per subject, per month</span>.
+        <span className="text-text font-semibold">
+          R500 per subject, per month
+        </span>
+        .
       </p>
       <div className="bg-soft border border-line rounded-md p-7 mb-10">
         <h2 className="font-sans font-semibold text-sm tracking-wide uppercase text-primary mb-4">

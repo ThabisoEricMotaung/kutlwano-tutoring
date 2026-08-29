@@ -1,39 +1,51 @@
+import Image from "next/image";
 import Link from "next/link";
 
-const NAV_LINKS = [
-  { href: "/specials", label: "Specials" },
-  { href: "/about", label: "About" },
-  { href: "/international-students", label: "International Students" },
-  { href: "/sa-students", label: "SA Students" },
-  { href: "/pricing", label: "Pricing" },
-  { href: "/contact", label: "Contact" },
-];
+const links = [
+  ["/specials", "Specials"],
+  ["/about", "About"],
+  ["/international-students", "International Students"],
+  ["/sa-students", "SA Students"],
+  ["/pricing", "Pricing"],
+  ["/contact", "Contact"],
+] as const;
 
 export default function Header() {
   return (
     <>
-      <header className="flex items-center justify-between px-6 md:px-12 py-5 border-b border-line bg-bg">
+      <header className="flex items-center justify-between gap-4 px-5 md:px-12 py-3 border-b border-line bg-bg">
         <Link
           href="/"
-          className="font-display font-bold text-2xl md:text-[26px] tracking-tight text-text"
+          aria-label="WanoTuts home"
+          className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4"
         >
-          Kutlwano <span className="text-primary">Tutoring</span>
+          <Image
+            src="/Images/wanotuts-logo.svg"
+            alt="WanoTuts"
+            width={578}
+            height={100}
+            priority
+            className="h-10 md:h-14 w-auto"
+          />
         </Link>
         <Link
           href="/contact"
-          className="font-sans font-semibold text-sm tracking-wide bg-primary text-white px-6 py-3 rounded-sm hover:bg-accent transition-colors"
+          className="font-semibold text-sm bg-primary text-white px-4 md:px-6 py-3 rounded-sm hover:bg-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-4"
         >
           Book a Lesson
         </Link>
       </header>
-      <nav className="flex flex-wrap gap-5 md:gap-9 justify-center px-4 py-4 border-b border-line bg-bg">
-        {NAV_LINKS.map((link) => (
+      <nav
+        aria-label="Main navigation"
+        className="flex flex-wrap items-center gap-x-4 md:gap-x-8 gap-y-3 justify-center px-3 py-3.5 border-b border-line bg-bg"
+      >
+        {links.map(([href, label]) => (
           <Link
-            key={link.href}
-            href={link.href}
-            className="font-sans font-semibold text-[12.5px] tracking-[0.09em] uppercase text-text/75 hover:text-primary hover:opacity-100 transition-colors"
+            key={href}
+            href={href}
+            className="font-semibold text-[12px] tracking-[0.08em] uppercase text-text/75 hover:text-primary transition-colors focus-visible:outline-2 focus-visible:outline-offset-4"
           >
-            {link.label}
+            {label}
           </Link>
         ))}
       </nav>
