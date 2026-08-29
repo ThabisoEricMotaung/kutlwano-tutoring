@@ -13,7 +13,9 @@ export async function POST(request: Request) {
         { status: 410 },
       );
 
-    const parsed = checkoutSchema.safeParse(await request.json());
+    const body = await request.json();
+
+    const parsed = checkoutSchema.safeParse(body);
     if (!parsed.success)
       return NextResponse.json(
         {
@@ -23,9 +25,7 @@ export async function POST(request: Request) {
         { status: 400 },
       );
 
-    const paymentMethod = (
-      (await request.json()).paymentMethod || "payfast"
-    ).toLowerCase();
+    const paymentMethod = (body.paymentMethod || "payfast").toLowerCase();
 
     if (paymentMethod !== "eft" && paymentMethod !== "payfast") {
       return NextResponse.json(
